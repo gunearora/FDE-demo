@@ -1,0 +1,33 @@
+{
+  "xsappname": "my-btp-app",
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.User",
+      "description": "GR Automation User"
+    },
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "GR Automation Admin"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "User",
+      "description": "GR Automation User",
+      "scope-references": ["$XSAPPNAME.User"]
+    },
+    {
+      "name": "Admin",
+      "description": "GR Automation Admin",
+      "scope-references": ["$XSAPPNAME.User", "$XSAPPNAME.Admin"]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "GR_Automation_User",
+      "description": "Goods Receipt Automation User",
+      "role-template-references": ["$XSAPPNAME.User"]
+    }
+  ]
+}

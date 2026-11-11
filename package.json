@@ -1,0 +1,51 @@
+{
+  "name": "my-btp-app",
+  "version": "1.0.0",
+  "description": "Goods Receipt Automation from Delivery Notes",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "build": "cds build --production"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1",
+    "@cap-js/hana": "^3",
+    "@sap-cloud-sdk/connectivity": "^3",
+    "@sap-cloud-sdk/http-client": "^3",
+    "@sap/cds": "^10.2.2",
+    "@sap/xssec": "^4",
+    "express": "^4",
+    "multer": "^2.5.0",
+    "passport": "^0.7.0",
+    "pdf-parse": "^1.1.4",
+    "pdf2json": "^3.2.2"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3.1.2"
+  },
+  "cds": {
+    "requires": {
+      "[development]": {
+        "db": {
+          "kind": "sqlite",
+          "credentials": {
+            "url": "db.sqlite"
+          }
+        },
+        "auth": "dummy"
+      },
+      "[production]": {
+        "db": {
+          "kind": "hana"
+        },
+        "auth": "xsuaa"
+      }
+    },
+    "server": {
+      "cors": true
+    }
+  }
+}

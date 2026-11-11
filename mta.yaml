@@ -1,0 +1,76 @@
+_schema-version: '3.1'
+ID: my-btp-app
+version: 1.0.0
+description: GR Automation from Delivery Notes
+
+parameters:
+  enable-parallel-deployments: true
+
+build-parameters:
+  before-all:
+    - builder: custom
+      commands:
+        - npm ci
+        - npx cds build --production
+        - xcopy /E /I /Y app\webapp gen\srv\app\webapp
+
+modules:
+
+  # ---- CAP Node.js backend (also serves the UI via express.static) ----------
+  - name: my-btp-app-srv
+    type: nodejs
+    path: gen/srv
+    parameters:
+      buildpack: nodejs_buildpack
+      disk-quota: 1024M
+      memory: 512M
+    build-parameters:
+      builder: npm
+      ignore:
+        - node_modules/
+        - .env
+        - default-env.json
+    provides:
+      - name: srv-api
+        properties:
+          srv-url: '${default-url}'
+    requires:
+      - name: my-btp-app-db
+      - name: my-btp-app-xsuaa
+      - name: my-btp-app-destination
+
+  # ---- HANA DB deployer -------------------------------------------------------
+  - name: my-btp-app-db-deployer
+    type: hdb
+    path: gen/db
+    parameters:
+      buildpack: nodejs_buildpack
+    build-parameters:
+      ignore:
+        - node_modules/
+    requires:
+      - name: my-btp-app-db
+
+resources:
+
+  - name: my-btp-app-db
+    type: com.sap.xs.hdi-container
+    parameters:
+      service: hana
+      service-plan: hdi-shared
+
+  - name: my-btp-app-xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: my-btp-app-${org}-${space}
+        tenant-mode: dedicated
+
+  - name: my-btp-app-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite

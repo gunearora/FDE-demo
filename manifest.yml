@@ -1,0 +1,41 @@
+---
+applications:
+
+  # HANA DB deployer – runs once, exits, no HTTP route
+  - name: my-btp-app-db-deployer
+    path: gen/db
+    buildpacks:
+      - nodejs_buildpack
+    no-route: true
+    health-check-type: process
+    memory: 256M
+    services:
+      - my-btp-app-db
+    env:
+      EXIT: 1
+
+  # Approuter – handles XSUAA login and forwards authenticated requests to backend
+  - name: my-btp-app-approuter
+    path: approuter
+    buildpacks:
+      - nodejs_buildpack
+    memory: 256M
+    services:
+      - my-btp-app-xsuaa
+    env:
+      destinations: '[{"name":"srv-api","url":"https://my-btp-app-srv.cfapps.us10.hana.ondemand.com","forwardAuthToken":true}]'
+
+  # CAP Node.js backend (also serves the UI)
+  - name: my-btp-app-srv
+    path: gen/srv
+    buildpacks:
+      - nodejs_buildpack
+    memory: 512M
+    disk_quota: 1024M
+    services:
+      - my-btp-app-db
+      - my-btp-app-xsuaa
+      - my-btp-app-destination
+      - my-btp-app-connectivity
+    env:
+      NODE_ENV: production

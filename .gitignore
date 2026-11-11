@@ -1,0 +1,11 @@
+default-env.json
+.env
+db.sqlite
+db.sqlite-shm
+db.sqlite-wal
+node_modules/
+gen/
+mta_archives/
+*.mtar
+Makefile_*.mta
+.claude/
