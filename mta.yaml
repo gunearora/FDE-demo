@@ -44,6 +44,7 @@ modules:
       - name: my-btp-app-db
       - name: my-btp-app-xsuaa
       - name: my-btp-app-destination
+      - name: my-btp-app-connectivity
 
   # ---- HANA DB deployer -------------------------------------------------------
   - name: my-btp-app-db-deployer
@@ -79,4 +80,10 @@ resources:
     type: org.cloudfoundry.managed-service
     parameters:
       service: destination
+      service-plan: lite
+
+  - name: my-btp-app-connectivity
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: connectivity
       service-plan: lite
