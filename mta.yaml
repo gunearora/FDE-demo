@@ -1,11 +1,13 @@
 _schema-version: '3.1'
-ID: gr-automation-app
+ID: my-btp-app
 version: 1.0.0
 description: GR Automation from Delivery Notes
 
+# To rename the app for a different environment, do a find-and-replace
+# of "my-btp-app" in this file before running mbt build.
+
 parameters:
   enable-parallel-deployments: true
-  app-name: my-btp-app             # ← Change this ONE value to rename all apps and services
 
 build-parameters:
   before-all:
@@ -18,7 +20,7 @@ build-parameters:
 modules:
 
   # ---- CAP Node.js backend (also serves the UI via express.static) ----------
-  - name: ${app-name}-srv
+  - name: my-btp-app-srv
     type: nodejs
     path: gen/srv
     parameters:
@@ -36,12 +38,12 @@ modules:
         properties:
           srv-url: '${default-url}'
     requires:
-      - name: ${app-name}-db
-      - name: ${app-name}-xsuaa
-      - name: ${app-name}-destination
+      - name: my-btp-app-db
+      - name: my-btp-app-xsuaa
+      - name: my-btp-app-destination
 
   # ---- HANA DB deployer -------------------------------------------------------
-  - name: ${app-name}-db-deployer
+  - name: my-btp-app-db-deployer
     type: hdb
     path: gen/db
     parameters:
@@ -50,27 +52,27 @@ modules:
       ignore:
         - node_modules/
     requires:
-      - name: ${app-name}-db
+      - name: my-btp-app-db
 
 resources:
 
-  - name: ${app-name}-db
+  - name: my-btp-app-db
     type: com.sap.xs.hdi-container
     parameters:
       service: hana
       service-plan: hdi-shared
 
-  - name: ${app-name}-xsuaa
+  - name: my-btp-app-xsuaa
     type: org.cloudfoundry.managed-service
     parameters:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
       config:
-        xsappname: ${app-name}-${org}-${space}
+        xsappname: my-btp-app-${org}-${space}
         tenant-mode: dedicated
 
-  - name: ${app-name}-destination
+  - name: my-btp-app-destination
     type: org.cloudfoundry.managed-service
     parameters:
       service: destination
