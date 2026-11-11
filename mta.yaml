@@ -27,6 +27,7 @@ modules:
       buildpack: nodejs_buildpack
       disk-quota: 1024M
       memory: 512M
+      keep-existing-routes: true
     build-parameters:
       builder: npm
       ignore:
@@ -69,7 +70,7 @@ resources:
       service-plan: application
       path: ./xs-security.json
       config:
-        xsappname: my-btp-app-${org}-${space}
+        xsappname: my-btp-app
         tenant-mode: dedicated
 
   - name: my-btp-app-destination
