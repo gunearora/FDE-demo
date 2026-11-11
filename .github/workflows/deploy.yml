@@ -47,13 +47,7 @@ jobs:
 
       # 8. Login to BTP Cloud Foundry
       - name: Login to BTP Cloud Foundry
-        run: |
-          cf8 login \
-            -a ${{ secrets.CF_API }} \
-            -u ${{ secrets.CF_USERNAME }} \
-            -p ${{ secrets.CF_PASSWORD }} \
-            -o ${{ secrets.CF_ORG }} \
-            -s ${{ secrets.CF_SPACE }}
+        run: cf8 login -a "${{ secrets.CF_API }}" -u "${{ secrets.CF_USERNAME }}" -p "${{ secrets.CF_PASSWORD }}" -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
 
       # 9. Deploy MTA archive
       - name: Deploy to BTP
