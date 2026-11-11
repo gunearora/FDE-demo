@@ -1,0 +1,60 @@
+name: Deploy to SAP BTP
+
+on:
+  push:
+    branches: [main]       # auto-deploy on every push to main
+  workflow_dispatch:        # also allow manual trigger from GitHub Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout source code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Node.js setup (uses npm cache for faster runs)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # 3. Install MBT (Cloud MTA Build Tool)
+      - name: Install MBT
+        run: npm install -g mbt
+
+      # 4. Install CF CLI v8
+      - name: Install CF CLI v8
+        run: |
+          wget -q -O - https://packages.cloudfoundry.org/debian/cli.cloudfoundry.org.key | sudo apt-key add -
+          echo "deb https://packages.cloudfoundry.org/debian stable main" | sudo tee /etc/apt/sources.list.d/cloudfoundry-cli.list
+          sudo apt-get update -qq
+          sudo apt-get install -y cf8-cli
+
+      # 5. Install CF Multiapps plugin (enables cf deploy for MTA archives)
+      - name: Install CF Multiapps plugin
+        run: cf8 install-plugin multiapps -f
+
+      # 6. Install project dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 7. Build MTA archive (mbt build works natively on Linux — no make issues)
+      - name: Build MTA
+        run: mbt build --platform cf
+
+      # 8. Login to BTP Cloud Foundry
+      - name: Login to BTP Cloud Foundry
+        run: |
+          cf8 login \
+            -a ${{ secrets.CF_API }} \
+            -u ${{ secrets.CF_USERNAME }} \
+            -p ${{ secrets.CF_PASSWORD }} \
+            -o ${{ secrets.CF_ORG }} \
+            -s ${{ secrets.CF_SPACE }}
+
+      # 9. Deploy MTA archive
+      - name: Deploy to BTP
+        run: cf8 deploy mta_archives/*.mtar -f

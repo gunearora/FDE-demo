@@ -13,7 +13,7 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
-        - xcopy /E /I /Y app\webapp gen\srv\app\webapp
+        - node -e "require('fs').cpSync('app/webapp','gen/srv/app/webapp',{recursive:true})"
 
 modules:
 
