@@ -1,10 +1,11 @@
 _schema-version: '3.1'
-ID: my-btp-app
+ID: gr-automation-app
 version: 1.0.0
 description: GR Automation from Delivery Notes
 
 parameters:
   enable-parallel-deployments: true
+  app-name: gr-automation          # ← Change this ONE value to rename all apps and services
 
 build-parameters:
   before-all:
@@ -17,7 +18,7 @@ build-parameters:
 modules:
 
   # ---- CAP Node.js backend (also serves the UI via express.static) ----------
-  - name: my-btp-app-srv
+  - name: ${app-name}-srv
     type: nodejs
     path: gen/srv
     parameters:
@@ -35,12 +36,12 @@ modules:
         properties:
           srv-url: '${default-url}'
     requires:
-      - name: my-btp-app-db
-      - name: my-btp-app-xsuaa
-      - name: my-btp-app-destination
+      - name: ${app-name}-db
+      - name: ${app-name}-xsuaa
+      - name: ${app-name}-destination
 
   # ---- HANA DB deployer -------------------------------------------------------
-  - name: my-btp-app-db-deployer
+  - name: ${app-name}-db-deployer
     type: hdb
     path: gen/db
     parameters:
@@ -49,27 +50,27 @@ modules:
       ignore:
         - node_modules/
     requires:
-      - name: my-btp-app-db
+      - name: ${app-name}-db
 
 resources:
 
-  - name: my-btp-app-db
+  - name: ${app-name}-db
     type: com.sap.xs.hdi-container
     parameters:
       service: hana
       service-plan: hdi-shared
 
-  - name: my-btp-app-xsuaa
+  - name: ${app-name}-xsuaa
     type: org.cloudfoundry.managed-service
     parameters:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
       config:
-        xsappname: my-btp-app-${org}-${space}
+        xsappname: ${app-name}-${org}-${space}
         tenant-mode: dedicated
 
-  - name: my-btp-app-destination
+  - name: ${app-name}-destination
     type: org.cloudfoundry.managed-service
     parameters:
       service: destination
