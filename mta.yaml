@@ -5,7 +5,7 @@ description: GR Automation from Delivery Notes
 
 parameters:
   enable-parallel-deployments: true
-  app-name: gr-automation          # ← Change this ONE value to rename all apps and services
+  app-name: my-btp-app             # ← Change this ONE value to rename all apps and services
 
 build-parameters:
   before-all:
