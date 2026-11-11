@@ -27,6 +27,8 @@ modules:
       buildpack: nodejs_buildpack
       disk-quota: 1024M
       memory: 512M
+      routes:
+        - route: my-btp-app-srv.${default-domain}
       keep-existing-routes: true
     build-parameters:
       builder: npm
