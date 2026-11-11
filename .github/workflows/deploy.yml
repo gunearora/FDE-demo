@@ -46,8 +46,23 @@ jobs:
         run: mbt build --platform cf
 
       # 8. Login to BTP Cloud Foundry
+      # Diagnostic: confirm secrets are populated (values are masked in logs)
+      - name: Check secrets are set
+        run: |
+          [ -n "${{ secrets.CF_API }}" ] && echo "CF_API: set" || echo "CF_API: EMPTY"
+          [ -n "${{ secrets.CF_USERNAME }}" ] && echo "CF_USERNAME: set" || echo "CF_USERNAME: EMPTY"
+          [ -n "${{ secrets.CF_PASSWORD }}" ] && echo "CF_PASSWORD: set" || echo "CF_PASSWORD: EMPTY"
+          [ -n "${{ secrets.CF_ORG }}" ] && echo "CF_ORG: set" || echo "CF_ORG: EMPTY"
+          [ -n "${{ secrets.CF_SPACE }}" ] && echo "CF_SPACE: set" || echo "CF_SPACE: EMPTY"
+
       - name: Login to BTP Cloud Foundry
-        run: cf8 login -a "${{ secrets.CF_API }}" -u "${{ secrets.CF_USERNAME }}" -p "${{ secrets.CF_PASSWORD }}" -o "${{ secrets.CF_ORG }}" -s "${{ secrets.CF_SPACE }}"
+        env:
+          CF_API:      ${{ secrets.CF_API }}
+          CF_USERNAME: ${{ secrets.CF_USERNAME }}
+          CF_PASSWORD: ${{ secrets.CF_PASSWORD }}
+          CF_ORG:      ${{ secrets.CF_ORG }}
+          CF_SPACE:    ${{ secrets.CF_SPACE }}
+        run: cf8 login -a "$CF_API" -u "$CF_USERNAME" -p "$CF_PASSWORD" -o "$CF_ORG" -s "$CF_SPACE"
 
       # 9. Deploy MTA archive
       - name: Deploy to BTP
