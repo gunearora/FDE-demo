@@ -1,0 +1,81 @@
+{
+    "_version": "1.65.0",
+    "sap.app": {
+        "id": "test_gr",
+        "type": "application",
+        "title": "Goods Receipt from Delivery Note",
+        "description": "Upload delivery notes, match PO items and post goods receipts to S/4HANA",
+        "applicationVersion": {
+            "version": "1.0.0"
+        },
+        "dataSources": {
+            "deliveryService": {
+                "uri": "/delivery/",
+                "type": "OData",
+                "settings": {
+                    "odataVersion": "4.0"
+                }
+            }
+        }
+    },
+    "sap.ui": {
+        "technology": "UI5",
+        "icons": {
+            "icon": "sap-icon://document"
+        },
+        "deviceTypes": {
+            "desktop": true,
+            "tablet": true,
+            "phone": false
+        }
+    },
+    "sap.ui5": {
+        "rootView": {
+            "viewName": "test_gr.view.App",
+            "type": "XML",
+            "async": true,
+            "id": "appView"
+        },
+        "dependencies": {
+            "minUI5Version": "1.120.0",
+            "libs": {
+                "sap.m": {},
+                "sap.ui.core": {},
+                "sap.f": {},
+                "sap.ui.table": {},
+                "sap.ui.layout": {}
+            }
+        },
+        "models": {
+            "i18n": {
+                "type": "sap.ui.model.resource.ResourceModel",
+                "settings": {
+                    "bundleName": "test_gr.i18n.i18n"
+                }
+            },
+            "": {
+                "dataSource": "deliveryService",
+                "preload": false
+            }
+        },
+        "routing": {
+            "config": {
+                "routerClass": "sap.m.routing.Router",
+                "viewType": "XML",
+                "viewPath": "test_gr.view",
+                "controlId": "app",
+                "controlAggregation": "pages"
+            },
+            "routes": [
+                { "name": "upload",  "pattern": "",        "target": "upload"  },
+                { "name": "match",   "pattern": "match/{deliveryNoteId}",  "target": "match"   },
+                { "name": "confirm", "pattern": "confirm/{deliveryNoteId}", "target": "confirm" }
+            ],
+            "targets": {
+                "upload":  { "viewName": "Upload"  },
+                "match":   { "viewName": "Match"   },
+                "confirm": { "viewName": "Confirm" }
+            }
+        }
+    }
+}

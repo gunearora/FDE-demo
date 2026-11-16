@@ -1,0 +1,76 @@
+<mvc:View
+    controllerName="test_gr.controller.Match"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core">
+    <Page
+        title="Goods Receipt — Step 2: Review Matches"
+        showNavButton="true"
+        navButtonPress="onNavBack">
+        <content>
+            <f:DynamicPage headerExpanded="true" toggleHeaderOnTitleClick="false">
+                <f:title>
+                    <f:DynamicPageTitle>
+                        <f:heading><Title text="PO Match Results"/></f:heading>
+                        <f:subheading>
+                            <Text text="Review the matched items. Select items to include in the goods receipt. Items within tolerance are shown in green; warnings in orange."/>
+                        </f:subheading>
+                    </f:DynamicPageTitle>
+                </f:title>
+                <f:content>
+                    <VBox class="sapUiMediumMargin">
+                        <Panel headerText="Matched Purchase Order Items">
+                            <content>
+                                <Table
+                                    id="matchTable"
+                                    mode="MultiSelect"
+                                    selectionChange="onSelectionChange"
+                                    items="{appState>/matchedItems}"
+                                    noDataText="No matched items">
+                                    <columns>
+                                        <Column><Text text="PO Number"/></Column>
+                                        <Column><Text text="PO Item"/></Column>
+                                        <Column><Text text="Material"/></Column>
+                                        <Column><Text text="Delivered Qty"/></Column>
+                                        <Column><Text text="PO Open Qty"/></Column>
+                                        <Column><Text text="UoM"/></Column>
+                                        <Column><Text text="Tolerance %"/></Column>
+                                        <Column><Text text="Status"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem selected="{appState>_selected}">
+                                            <cells>
+                                                <Text text="{appState>poNumber}"/>
+                                                <Text text="{appState>poItem}"/>
+                                                <Text text="{appState>material}"/>
+                                                <ObjectNumber number="{appState>quantity}" unit="{appState>uom}"/>
+                                                <ObjectNumber number="{appState>matchedQty}" unit="{appState>uom}"/>
+                                                <Text text="{appState>uom}"/>
+                                                <Text text="{appState>tolerancePct}%"/>
+                                                <ObjectStatus
+                                                    text="{appState>matchStatus}"
+                                                    state="{= ${appState>matchStatus} === 'MATCH' ? 'Success' : ${appState>matchStatus} === 'WARNING' ? 'Warning' : 'Error'}"/>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                                <Toolbar>
+                                    <Text id="selectionInfo" text="0 items selected"/>
+                                    <ToolbarSpacer/>
+                                    <Button
+                                        id="postBtn"
+                                        text="Post Goods Receipt"
+                                        type="Emphasized"
+                                        icon="sap-icon://complete"
+                                        enabled="false"
+                                        press="onPostGR"/>
+                                </Toolbar>
+                            </content>
+                        </Panel>
+                    </VBox>
+                </f:content>
+            </f:DynamicPage>
+        </content>
+    </Page>
+</mvc:View>

@@ -1,0 +1,12 @@
+node_modules/
+gen/
+mta_archives/
+*.db
+*.sqlite
+.env
+.env.local
+*.mtar
+_out/
+dist/
+.DS_Store
+Thumbs.db

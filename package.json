@@ -1,0 +1,54 @@
+{
+  "name": "test_gr",
+  "version": "1.0.0",
+  "description": "Goods Receipt automation from delivery notes — CAP application",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "cds-serve",
+    "watch": "cds watch",
+    "build": "mbt build",
+    "test": "jest --passWithNoTests",
+    "lint": "eslint srv/ --ext .js"
+  },
+  "dependencies": {
+    "@sap/cds": "^8",
+    "@sap/xssec": "^3",
+    "@anthropic-ai/sdk": "^0.30.0",
+    "express": "^4",
+    "passport": "^0.7",
+    "pdf-parse": "^1.1.1"
+  },
+  "devDependencies": {
+    "@sap/cds-dk": "^8",
+    "jest": "^29",
+    "eslint": "^8"
+  },
+  "cds": {
+    "requires": {
+      "auth": {
+        "kind": "xsuaa"
+      },
+      "DED_HTTP_200": {
+        "kind": "odata",
+        "credentials": {
+          "destination": "DED_HTTP_200",
+          "path": "/"
+        }
+      },
+      "db": {
+        "kind": "hana",
+        "[development]": {
+          "kind": "sqlite",
+          "credentials": {
+            "database": ":memory:"
+          }
+        }
+      }
+    },
+    "features": {
+      "fiori_preview": true
+    }
+  }
+}

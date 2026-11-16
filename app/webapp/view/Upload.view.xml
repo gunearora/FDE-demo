@@ -1,0 +1,94 @@
+<mvc:View
+    controllerName="test_gr.controller.Upload"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:l="sap.ui.layout"
+    xmlns:u="sap.ui.unified">
+    <Page
+        title="Goods Receipt — Step 1: Upload Delivery Note"
+        showNavButton="false">
+        <content>
+            <f:DynamicPage id="dynPage" headerExpanded="true" toggleHeaderOnTitleClick="false">
+                <f:title>
+                    <f:DynamicPageTitle>
+                        <f:heading>
+                            <Title text="Upload Delivery Note or Shipping Notice"/>
+                        </f:heading>
+                        <f:subheading>
+                            <Text text="Upload a PDF file. The application will extract PO data and match it against S/4HANA purchase orders."/>
+                        </f:subheading>
+                    </f:DynamicPageTitle>
+                </f:title>
+                <f:content>
+                    <VBox class="sapUiMediumMargin">
+                        <Panel headerText="Document Upload" class="sapUiResponsiveMargin">
+                            <content>
+                                <VBox class="sapUiSmallMarginBeginEnd sapUiSmallMarginTopBottom">
+                                    <u:FileUploader
+                                        id="fileUploader"
+                                        name="deliveryNote"
+                                        fileType="pdf"
+                                        mimeType="application/pdf"
+                                        maximumFileSize="10"
+                                        width="100%"
+                                        placeholder="Select PDF file (max 10 MB)..."
+                                        change="onFileChange"
+                                        typeMismatch="onFileTypeMismatch"
+                                        fileSizeExceed="onFileSizeExceed"
+                                        style="Emphasized"/>
+                                    <Button
+                                        id="uploadBtn"
+                                        text="Extract &amp; Continue"
+                                        type="Emphasized"
+                                        icon="sap-icon://upload"
+                                        enabled="{= !!${appState>/selectedFile} }"
+                                        press="onUpload"
+                                        class="sapUiSmallMarginTop"/>
+                                </VBox>
+                            </content>
+                        </Panel>
+
+                        <Panel headerText="Extracted Items Preview" visible="{= ${appState>/extractedItems}.length > 0 }">
+                            <content>
+                                <Table
+                                    id="previewTable"
+                                    items="{appState>/extractedItems}"
+                                    noDataText="No items extracted yet">
+                                    <columns>
+                                        <Column><Text text="Line"/></Column>
+                                        <Column><Text text="PO Number"/></Column>
+                                        <Column><Text text="PO Item"/></Column>
+                                        <Column><Text text="Material"/></Column>
+                                        <Column><Text text="Quantity"/></Column>
+                                        <Column><Text text="UoM"/></Column>
+                                    </columns>
+                                    <items>
+                                        <ColumnListItem>
+                                            <cells>
+                                                <Text text="{appState>lineNumber}"/>
+                                                <Text text="{appState>poNumber}"/>
+                                                <Text text="{appState>poItem}"/>
+                                                <Text text="{appState>material}"/>
+                                                <ObjectNumber number="{appState>quantity}" unit="{appState>uom}"/>
+                                                <Text text="{appState>uom}"/>
+                                            </cells>
+                                        </ColumnListItem>
+                                    </items>
+                                </Table>
+                                <Toolbar>
+                                    <ToolbarSpacer/>
+                                    <Button
+                                        text="Match with S/4HANA"
+                                        type="Emphasized"
+                                        icon="sap-icon://compare"
+                                        press="onMatchPOs"/>
+                                </Toolbar>
+                            </content>
+                        </Panel>
+                    </VBox>
+                </f:content>
+            </f:DynamicPage>
+        </content>
+    </Page>
+</mvc:View>

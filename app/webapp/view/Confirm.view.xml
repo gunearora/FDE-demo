@@ -1,0 +1,46 @@
+<mvc:View
+    controllerName="test_gr.controller.Confirm"
+    xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f">
+    <Page
+        title="Goods Receipt — Step 3: Confirmation"
+        showNavButton="false">
+        <content>
+            <f:DynamicPage headerExpanded="true" toggleHeaderOnTitleClick="false">
+                <f:title>
+                    <f:DynamicPageTitle>
+                        <f:heading><Title text="Goods Receipt Posted Successfully"/></f:heading>
+                    </f:DynamicPageTitle>
+                </f:title>
+                <f:content>
+                    <VBox class="sapUiMediumMargin" alignItems="Center">
+                        <ObjectHeader
+                            title="Goods Receipt Document"
+                            icon="sap-icon://complete">
+                            <attributes>
+                                <ObjectAttribute title="GR Document" text="{appState>/grDocNumber}"/>
+                                <ObjectAttribute title="Fiscal Year" text="{appState>/grYear}"/>
+                                <ObjectAttribute title="Items Posted" text="{appState>/grItemCount}"/>
+                            </attributes>
+                        </ObjectHeader>
+
+                        <HBox class="sapUiLargeMarginTop">
+                            <Button
+                                text="Post Another Delivery Note"
+                                type="Emphasized"
+                                icon="sap-icon://add-document"
+                                press="onNewUpload"
+                                class="sapUiSmallMarginEnd"/>
+                            <Button
+                                text="View GR Log"
+                                type="Default"
+                                icon="sap-icon://list"
+                                press="onViewLog"/>
+                        </HBox>
+                    </VBox>
+                </f:content>
+            </f:DynamicPage>
+        </content>
+    </Page>
+</mvc:View>

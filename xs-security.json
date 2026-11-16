@@ -1,0 +1,45 @@
+{
+  "xsappname": "test_gr",
+  "tenant-mode": "dedicated",
+  "description": "Security for test_gr — Goods Receipt from Delivery Note",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.GR_Creator",
+      "description": "Allows posting goods receipts"
+    },
+    {
+      "name": "$XSAPPNAME.GR_Viewer",
+      "description": "Allows viewing delivery notes and GR log"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "GR_Creator",
+      "description": "Goods Receipt creator role",
+      "scope-references": [
+        "$XSAPPNAME.GR_Creator",
+        "$XSAPPNAME.GR_Viewer"
+      ]
+    },
+    {
+      "name": "GR_Viewer",
+      "description": "Goods Receipt viewer role",
+      "scope-references": [
+        "$XSAPPNAME.GR_Viewer"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "GR_Creator_Collection",
+      "description": "Users who can create goods receipts",
+      "role-template-references": [
+        "$XSAPPNAME.GR_Creator"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "token-validity": 43200,
+    "refresh-token-validity": 2592000
+  }
+}
