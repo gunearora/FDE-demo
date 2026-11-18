@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GR Automation – Delivery Notes/Shipping Notices Processing</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <style>
+    :root {
+      --sap-blue:    #0070F2;
+      --sap-blue-dk: #0040B0;
+      --sap-teal:    #0F828F;
+      --sap-green:   #256F3A;
+      --sap-red:     #BB0000;
+      --sap-orange:  #E76500;
+      --sap-gray:    #F5F6F7;
+      --sap-border:  #D9D9D9;
+      --sap-header:  #354A5E;
+    }
+    body { background: var(--sap-gray); font-family: "72", Arial, sans-serif; font-size: 14px; }
+
+    /* ---- Shell header ---- */
+    .shell-header {
+      background: var(--sap-header);
+      color: #fff;
+      padding: 0 1.5rem;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .shell-header .app-title { font-size: 1rem; font-weight: 600; letter-spacing: .3px; }
+    .shell-header .badge-env  { background: var(--sap-orange); font-size: .7rem; padding: 2px 7px; border-radius: 10px; }
+
+    /* ---- Wizard steps bar ---- */
+    .wizard-bar {
+      background: #fff;
+      border-bottom: 1px solid var(--sap-border);
+      padding: .75rem 2rem;
+      display: flex;
+      gap: 0;
+      overflow-x: auto;
+    }
+    .wstep {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+      padding: .4rem 1.2rem;
+      border-radius: 20px;
+      cursor: default;
+      white-space: nowrap;
+      font-size: .82rem;
+      color: #666;
+      border: 1px solid transparent;
+    }
+    .wstep.active  { background: var(--sap-blue); color: #fff; font-weight: 600; }
+    .wstep.done    { color: var(--sap-green); border-color: var(--sap-green); }
+    .wstep-sep     { color: var(--sap-border); padding: .4rem .3rem; align-self: center; font-size: .8rem; }
+
+    /* ---- Cards ---- */
+    .card { border: 1px solid var(--sap-border); border-radius: 6px; }
+    .card-header { background: #fff; border-bottom: 1px solid var(--sap-border); font-weight: 600; font-size: .9rem; }
+
+    /* ---- Drop zone ---- */
+    #drop-zone {
+      border: 2px dashed var(--sap-blue);
+      border-radius: 8px;
+      padding: 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    #drop-zone:hover, #drop-zone.drag-over { background: #e8f2ff; }
+    #drop-zone .bi { font-size: 3rem; color: var(--sap-blue); }
+
+    /* ---- Tables ---- */
+    .table th { background: #f0f4f9; font-weight: 600; font-size: .8rem; }
+    .table td { vertical-align: middle; font-size: .82rem; }
+    .badge-match   { background: #d4edda; color: var(--sap-green); }
+    .badge-nomatch { background: #f8d7da; color: var(--sap-red); }
+    .badge-warn    { background: #fff3cd; color: var(--sap-orange); }
+
+    /* ---- Status chips ---- */
+    .chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+            border-radius: 20px; font-size: .75rem; font-weight: 600; }
+    .chip-green  { background: #d4edda; color: var(--sap-green); }
+    .chip-red    { background: #f8d7da; color: var(--sap-red); }
+    .chip-orange { background: #fff3cd; color: var(--sap-orange); }
+    .chip-blue   { background: #cce4ff; color: var(--sap-blue-dk); }
+
+    /* ---- Action buttons ---- */
+    .btn-primary  { background: var(--sap-blue); border-color: var(--sap-blue); }
+    .btn-primary:hover { background: var(--sap-blue-dk); border-color: var(--sap-blue-dk); }
+    .btn-success  { background: var(--sap-green); border-color: var(--sap-green); }
+
+    /* ---- Spinner overlay ---- */
+    #overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.35);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      gap: 1rem;
+      color: #fff;
+      font-size: 1rem;
+    }
+    #overlay.show { display: flex; }
+
+    /* ---- GR result cards ---- */
+    .gr-card { border-left: 4px solid var(--sap-green); border-radius: 6px;
+               background: #fff; padding: 1rem 1.25rem; margin-bottom: .75rem; }
+    .gr-card.error { border-left-color: var(--sap-red); }
+    .gr-doc-no { font-size: 1.3rem; font-weight: 700; color: var(--sap-blue-dk); }
+
+    /* ---- Editable cell ---- */
+    td[contenteditable="true"]:focus { outline: 1px solid var(--sap-blue); background: #f0f8ff; }
+
+    /* ---- Tolerance badge in matched table ---- */
+    .tol-ok  { color: var(--sap-green); font-weight: 700; }
+    .tol-warn{ color: var(--sap-orange); font-weight: 700; }
+    .tol-fail{ color: var(--sap-red); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<!-- Shell Header -->
+<div class="shell-header">
+  <i class="bi bi-box-seam-fill" style="font-size:1.3rem"></i>
+  <span class="app-title">GR Automation &mdash; Delivery Notes/Shipping Notices Processing</span>
+  <span class="badge-env ms-2">DED / org_pocus / POC</span>
+</div>
+
+<!-- Wizard Steps Bar -->
+<div class="wizard-bar" id="wizard-bar">
+  <div class="wstep active" id="ws1"><i class="bi bi-upload"></i> 1. Upload PDF</div>
+  <span class="wstep-sep">›</span>
+  <div class="wstep" id="ws2"><i class="bi bi-search"></i> 2. Extracted Data</div>
+  <span class="wstep-sep">›</span>
+  <div class="wstep" id="ws3"><i class="bi bi-link-45deg"></i> 3. S/4HANA Match</div>
+  <span class="wstep-sep">›</span>
+  <div class="wstep" id="ws4"><i class="bi bi-check2-circle"></i> 4. Confirm GR</div>
+  <span class="wstep-sep">›</span>
+  <div class="wstep" id="ws5"><i class="bi bi-patch-check-fill"></i> 5. GR Posted</div>
+</div>
+
+<!-- Spinner Overlay -->
+<div id="overlay">
+  <div class="spinner-border text-light" style="width:3rem;height:3rem" role="status"></div>
+  <div id="overlay-msg">Processing…</div>
+</div>
+
+<!-- Main content area -->
+<div class="container-fluid px-4 py-3" style="max-width:1100px">
+
+  <!-- ======================================================= STEP 1 -->
+  <div id="step1">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <i class="bi bi-file-earmark-pdf text-danger me-1"></i> Upload Delivery Note or Shipping Notice (PDF)
+      </div>
+      <div class="card-body">
+        <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+          <div><i class="bi bi-cloud-arrow-up-fill"></i></div>
+          <p class="mt-2 mb-1 fw-bold">Drag &amp; Drop your PDF here, or click to browse</p>
+          <p class="text-muted small mb-0">Accepted: PDF &nbsp;|&nbsp; Max size: 15 MB</p>
+          <input type="file" id="file-input" accept="application/pdf" class="d-none" />
+        </div>
+        <div id="file-info" class="mt-3 d-none alert alert-info py-2 d-flex align-items-center gap-2">
+          <i class="bi bi-file-earmark-pdf-fill text-danger fs-5"></i>
+          <span id="file-name-label"></span>
+          <button class="btn btn-sm btn-outline-secondary ms-auto" onclick="resetUpload()">
+            <i class="bi bi-x-lg"></i> Remove
+          </button>
+        </div>
+        <div class="mt-3 d-flex align-items-center justify-content-between">
+          <button class="btn btn-primary px-4" id="btn-upload" disabled onclick="doUpload()">
+            <i class="bi bi-upload me-1"></i> Upload &amp; Extract
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= STEP 2 -->
+  <div id="step2" class="d-none">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2 d-flex align-items-center gap-2">
+        <i class="bi bi-file-text me-1"></i> Extracted Data from PDF
+        <span class="ms-auto">
+          <span class="chip chip-blue" id="chip-dn"></span>
+          <span class="chip chip-blue ms-1" id="chip-supp"></span>
+          <span class="chip chip-blue ms-1" id="chip-date"></span>
+        </span>
+      </div>
+      <div class="card-body p-0">
+        <div class="p-3 pb-1 d-flex align-items-center gap-2 text-muted small">
+          <i class="bi bi-info-circle"></i>
+          Review the extracted items below. Click any cell to correct values before matching.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered mb-0" id="extracted-table">
+            <thead>
+              <tr>
+                <th style="width:40px">#</th>
+                <th>PO Number</th>
+                <th>PO Item</th>
+                <th>Material</th>
+                <th>Description</th>
+                <th>Delivered Qty</th>
+                <th>Unit</th>
+                <th>Plant</th>
+                <th>Stor. Loc.</th>
+              </tr>
+            </thead>
+            <tbody id="extracted-tbody"></tbody>
+          </table>
+        </div>
+        <div class="p-3 text-end border-top">
+          <button class="btn btn-outline-secondary me-2" onclick="goStep(1)">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <div class="d-inline-flex align-items-center gap-2 me-3">
+            <label class="mb-0 fw-semibold small">Qty Tolerance&nbsp;%</label>
+            <input type="number" id="tolerance-input" value="5" min="0" max="50"
+                   class="form-control form-control-sm" style="width:70px" />
+          </div>
+          <button class="btn btn-primary px-4" onclick="doMatch()">
+            <i class="bi bi-link-45deg me-1"></i> Match with S/4HANA (DED)
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Raw text accordion -->
+    <div class="accordion mb-3" id="raw-accordion">
+      <div class="accordion-item">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#raw-collapse">
+            <i class="bi bi-file-earmark-text me-2"></i> View Raw Extracted Text
+          </button>
+        </h2>
+        <div id="raw-collapse" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            <pre id="raw-text" class="small" style="white-space:pre-wrap;max-height:300px;overflow:auto;background:#f8f9fa;padding:1rem;border-radius:4px"></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= STEP 3 -->
+  <div id="step3" class="d-none">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <i class="bi bi-link-45deg me-1"></i> S/4HANA Purchase Order Match Results
+        <span class="ms-2 text-muted small">(Destination: DED_HTTP_200)</span>
+      </div>
+      <div class="card-body p-0">
+        <div class="p-3 pb-1 text-muted small">
+          <i class="bi bi-info-circle"></i>
+          Green rows are within tolerance and selected for GR. Deselect any row you want to exclude.
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover table-bordered mb-0" id="match-table">
+            <thead>
+              <tr>
+                <th style="width:36px"><input type="checkbox" id="chk-all" checked onclick="toggleAll(this)" /></th>
+                <th>PO Number</th>
+                <th>PO Item</th>
+                <th>Material (S/4)</th>
+                <th>Delivered Qty</th>
+                <th>S/4 Open Qty</th>
+                <th>Unit</th>
+                <th>Plant</th>
+                <th>S/4 Found</th>
+                <th>Within Tol.</th>
+                <th>Diff %</th>
+              </tr>
+            </thead>
+            <tbody id="match-tbody"></tbody>
+          </table>
+        </div>
+        <div class="p-3 text-end border-top">
+          <button class="btn btn-outline-secondary me-2" onclick="goStep(2)">
+            <i class="bi bi-arrow-left"></i> Back
+          </button>
+          <button class="btn btn-warning px-4 fw-bold" id="btn-confirm-gr" onclick="confirmGR()">
+            <i class="bi bi-check2-circle me-1"></i> Confirm &amp; Post Goods Receipt
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= STEP 4 – Confirm modal -->
+  <div class="modal fade" id="confirm-modal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Confirm Goods Receipt Posting</h5>
+        </div>
+        <div class="modal-body">
+          <p>You are about to post <strong id="confirm-count"></strong> Goods Receipt document(s) in <strong>DED (S/4HANA)</strong> with movement type <strong>101</strong>.</p>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered" id="confirm-table">
+              <thead><tr>
+                <th>PO Number</th><th>PO Item</th><th>Material</th><th>Qty</th><th>Unit</th><th>Plant</th>
+              </tr></thead>
+              <tbody id="confirm-tbody"></tbody>
+            </table>
+          </div>
+          <div class="alert alert-warning py-2 small mb-0">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            This action will post real GR documents in the DED system. Proceed only if you are certain.
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button class="btn btn-success px-4 fw-bold" onclick="doPostGR()">
+            <i class="bi bi-check2-circle me-1"></i> Yes, Post GR
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================= STEP 5 -->
+  <div id="step5" class="d-none">
+    <div class="card shadow-sm mb-3">
+      <div class="card-header py-2">
+        <i class="bi bi-patch-check-fill text-success me-1"></i> Goods Receipt Posting Results
+      </div>
+      <div class="card-body">
+        <div id="gr-results-container"></div>
+        <!-- Summary table -->
+        <div class="table-responsive mt-3">
+          <table class="table table-sm table-bordered" id="gr-summary-table">
+            <thead>
+              <tr>
+                <th>PO Number</th>
+                <th>PO Item</th>
+                <th>Material</th>
+                <th>Plant</th>
+                <th>GR Document No.</th>
+                <th>GR Year</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="gr-summary-tbody"></tbody>
+          </table>
+        </div>
+        <div class="mt-3 text-end">
+          <button class="btn btn-outline-primary" onclick="startOver()">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Process Another Delivery Note
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ============================================================
+// State
+// ============================================================
+const state = {
+  step: 1,
+  deliveryNoteId: null,
+  fileName: null,
+  extractedItems: [],   // raw from server after extractData
+  matchedItems: [],     // raw from server after matchWithS4
+  selectedIds: [],
+  grResults: [],
+};
+
+// ============================================================
+// Helpers
+// ============================================================
+const BASE = '/api/delivery';
+
+function overlay(show, msg = 'Processing…') {
+  document.getElementById('overlay').classList.toggle('show', show);
+  document.getElementById('overlay-msg').textContent = msg;
+}
+
+function goStep(n) {
+  state.step = n;
+  for (let i = 1; i <= 5; i++) {
+    const panel = document.getElementById(`step${i}`);
+    if (panel) panel.classList.toggle('d-none', i !== n);
+    const ws = document.getElementById(`ws${i}`);
+    if (ws) {
+      ws.classList.remove('active', 'done');
+      if (i < n) ws.classList.add('done');
+      if (i === n) ws.classList.add('active');
+    }
+  }
+  window.scrollTo(0, 0);
+}
+
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(path, {
+    headers: { 'Content-Type': 'application/json', ...opts.headers },
+    ...opts,
+  });
+  const json = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(json.error?.message || json.error || `HTTP ${r.status}`);
+  return json;
+}
+
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ============================================================
+// STEP 1 – Upload PDF
+// ============================================================
+const dropZone = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) setFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) setFile(fileInput.files[0]); });
+
+let selectedFile = null;
+
+function setFile(f) {
+  if (f.type !== 'application/pdf') { alert('Please select a PDF file.'); return; }
+  selectedFile = f;
+  document.getElementById('file-name-label').textContent = `${f.name}  (${(f.size/1024).toFixed(1)} KB)`;
+  document.getElementById('file-info').classList.remove('d-none');
+  document.getElementById('btn-upload').disabled = false;
+}
+
+function resetUpload() {
+  selectedFile = null;
+  fileInput.value = '';
+  document.getElementById('file-info').classList.add('d-none');
+  document.getElementById('btn-upload').disabled = true;
+}
+
+async function doUpload() {
+  if (!selectedFile) return;
+  overlay(true, 'Uploading PDF…');
+  try {
+    // 1. Upload file via multipart
+    const form = new FormData();
+    form.append('file', selectedFile);
+    const upResp = await fetch('/api/upload-pdf', { method: 'POST', body: form });
+    const upJson = await upResp.json();
+    if (!upResp.ok) throw new Error(upJson.error || `Upload failed (${upResp.status})`);
+    state.deliveryNoteId = upJson.deliveryNoteId;
+    state.fileName = upJson.fileName;
+
+    // 2. Extract data
+    overlay(true, 'Extracting PO data from PDF…');
+    const extResp = await apiFetch(`${BASE}/extractData`, {
+      method: 'POST',
+      body: JSON.stringify({ deliveryNoteId: state.deliveryNoteId, useMock: true }),
+    });
+    const extraction = extResp.value ?? extResp;
+
+    // 3. Load items
+    const itemsResp = await apiFetch(`${BASE}/ExtractedItems?$filter=deliveryNote_ID eq '${state.deliveryNoteId}'&$orderby=lineNo`);
+    state.extractedItems = itemsResp.value ?? [];
+
+    renderStep2(extraction);
+    goStep(2);
+  } catch (err) {
+    alert(`Error: ${err.message}`);
+  } finally {
+    overlay(false);
+  }
+}
+
+// ============================================================
+// STEP 2 – Review Extracted Data
+// ============================================================
+function renderStep2(extraction) {
+  // Header chips
+  const dn   = extraction.deliveryNumber || '—';
+  const supp = extraction.supplierName   || '—';
+  const dt   = extraction.deliveryDate   || '—';
+  document.getElementById('chip-dn').innerHTML   = `<i class="bi bi-hash"></i> DN: ${esc(dn)}`;
+  document.getElementById('chip-supp').innerHTML = `<i class="bi bi-building"></i> ${esc(supp)}`;
+  document.getElementById('chip-date').innerHTML = `<i class="bi bi-calendar3"></i> ${esc(dt)}`;
+
+  const tbody = document.getElementById('extracted-tbody');
+  tbody.innerHTML = '';
+
+  if (!state.extractedItems.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">
+      <i class="bi bi-exclamation-circle me-1"></i>
+      No line items could be extracted automatically. Please check the raw text below and ensure the PDF contains structured data.
+    </td></tr>`;
+    return;
+  }
+
+  state.extractedItems.forEach((item, idx) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="text-center text-muted small">${item.lineNo ?? idx+1}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="poNumber">${esc(item.poNumber)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="poItem">${esc(item.poItem)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="material">${esc(item.material)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="description" class="text-muted" style="max-width:200px;overflow:hidden;white-space:nowrap" title="${esc(item.description)}">${esc(item.description)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="deliveredQty" class="text-end">${item.deliveredQty ?? 0}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="unit">${esc(item.unit)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="plant">${esc(item.plant)}</td>
+      <td contenteditable="true" data-id="${item.ID}" data-field="storageLocation">${esc(item.storageLocation)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Sync edits back to state.extractedItems on blur
+  tbody.querySelectorAll('[contenteditable]').forEach(td => {
+    td.addEventListener('blur', () => {
+      const id = td.dataset.id, field = td.dataset.field, val = td.textContent.trim();
+      const item = state.extractedItems.find(i => i.ID === id);
+      if (item) item[field] = isNaN(val) || field === 'poNumber' || field === 'material'
+        ? val : parseFloat(val);
+    });
+  });
+}
+
+// ============================================================
+// STEP 3 – Match with S/4HANA
+// ============================================================
+async function doMatch() {
+  const tol = parseFloat(document.getElementById('tolerance-input').value) || 5;
+  overlay(true, 'Matching with S/4HANA DED via DED_HTTP_200…');
+  try {
+    const resp = await apiFetch(`${BASE}/matchWithS4`, {
+      method: 'POST',
+      body: JSON.stringify({ deliveryNoteId: state.deliveryNoteId, tolerancePct: tol }),
+    });
+    state.matchedItems = resp.value ?? resp;
+    renderStep3();
+    goStep(3);
+  } catch (err) {
+    alert(`Match error: ${err.message}`);
+  } finally {
+    overlay(false);
+  }
+}
+
+function renderStep3() {
+  const tbody = document.getElementById('match-tbody');
+  tbody.innerHTML = '';
+
+  if (!state.matchedItems.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="text-center text-muted py-4">No match results returned.</td></tr>`;
+    return;
+  }
+
+  state.matchedItems.forEach(item => {
+    const matched = item.s4Matched;
+    const tol     = item.withinTolerance;
+    const diff    = item.diffPct != null ? item.diffPct.toFixed(1) + '%' : '—';
+    const diffCls = !matched ? 'tol-fail' : (tol ? 'tol-ok' : 'tol-warn');
+
+    const rowClass = !matched ? 'table-danger' : (tol ? 'table-success' : 'table-warning');
+    const tr = document.createElement('tr');
+    tr.className = rowClass;
+    tr.dataset.id = item.id;
+    tr.innerHTML = `
+      <td class="text-center">
+        <input type="checkbox" class="item-chk" data-id="${item.id}"
+          ${matched && tol ? 'checked' : ''} ${!matched ? 'disabled' : ''} />
+      </td>
+      <td class="fw-semibold">${esc(item.poNumber)}</td>
+      <td>${esc(item.poItem)}</td>
+      <td>${esc(item.s4Material || item.material)}</td>
+      <td class="text-end">${item.deliveredQty ?? '—'}</td>
+      <td class="text-end">${item.s4OpenQty ?? '—'}</td>
+      <td>${esc(item.unit)}</td>
+      <td>${esc(item.plant || item.s4Plant)}</td>
+      <td class="text-center">
+        ${matched
+          ? '<span class="chip chip-green"><i class="bi bi-check-circle-fill"></i> Yes</span>'
+          : '<span class="chip chip-red"><i class="bi bi-x-circle-fill"></i> No</span>'}
+      </td>
+      <td class="text-center">
+        ${!matched ? '—' : (tol
+          ? '<span class="chip chip-green"><i class="bi bi-check-lg"></i> Yes</span>'
+          : '<span class="chip chip-orange"><i class="bi bi-exclamation-lg"></i> No</span>')}
+      </td>
+      <td class="text-end ${diffCls}">${diff}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleAll(master) {
+  document.querySelectorAll('.item-chk:not(:disabled)').forEach(cb => cb.checked = master.checked);
+}
+
+// ============================================================
+// STEP 4 – Confirm modal
+// ============================================================
+function confirmGR() {
+  const checked = [...document.querySelectorAll('.item-chk:checked')].map(cb => cb.dataset.id);
+  if (!checked.length) { alert('Please select at least one item to post GR.'); return; }
+
+  const selected = state.matchedItems.filter(i => checked.includes(i.id));
+  document.getElementById('confirm-count').textContent = selected.length;
+
+  const tbody = document.getElementById('confirm-tbody');
+  tbody.innerHTML = selected.map(i => `
+    <tr>
+      <td>${esc(i.poNumber)}</td>
+      <td>${esc(i.poItem)}</td>
+      <td>${esc(i.s4Material || i.material)}</td>
+      <td class="text-end">${i.deliveredQty}</td>
+      <td>${esc(i.unit)}</td>
+      <td>${esc(i.plant || i.s4Plant)}</td>
+    </tr>
+  `).join('');
+
+  state.selectedIds = checked;
+  new bootstrap.Modal(document.getElementById('confirm-modal')).show();
+}
+
+// ============================================================
+// STEP 5 – Post GR & show results
+// ============================================================
+async function doPostGR() {
+  bootstrap.Modal.getInstance(document.getElementById('confirm-modal')).hide();
+  overlay(true, 'Posting Goods Receipts in DED S/4HANA…');
+  try {
+    const resp = await apiFetch(`${BASE}/postGoodsReceipt`, {
+      method: 'POST',
+      body: JSON.stringify({
+        deliveryNoteId: state.deliveryNoteId,
+        selectedIds: state.selectedIds,
+      }),
+    });
+    state.grResults = resp.value ?? resp;
+    renderStep5();
+    goStep(5);
+  } catch (err) {
+    alert(`GR posting error: ${err.message}`);
+  } finally {
+    overlay(false);
+  }
+}
+
+function renderStep5() {
+  const container = document.getElementById('gr-results-container');
+  const tbody     = document.getElementById('gr-summary-tbody');
+  container.innerHTML = '';
+  tbody.innerHTML = '';
+
+  const success = state.grResults.filter(r => r.success);
+  const failed  = state.grResults.filter(r => !r.success);
+
+  // Banner
+  if (success.length) {
+    container.innerHTML += `
+      <div class="alert alert-success d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <div><strong>${success.length}</strong> Goods Receipt document(s) posted successfully in DED.</div>
+      </div>`;
+  }
+  if (failed.length) {
+    container.innerHTML += `
+      <div class="alert alert-danger d-flex align-items-center gap-2 mb-2">
+        <i class="bi bi-x-circle-fill fs-5"></i>
+        <div><strong>${failed.length}</strong> posting(s) failed. See details below.</div>
+      </div>`;
+  }
+
+  // Cards for successful postings
+  success.forEach(r => {
+    container.innerHTML += `
+      <div class="gr-card">
+        <div class="d-flex align-items-center gap-3 mb-1">
+          <i class="bi bi-patch-check-fill text-success fs-4"></i>
+          <div>
+            <div class="text-muted small">GR Document Number</div>
+            <div class="gr-doc-no">${esc(r.grDocumentNo)} / ${esc(r.grDocumentYear)}</div>
+          </div>
+          <div class="ms-auto text-end">
+            <div class="text-muted small">Purchase Order</div>
+            <div class="fw-bold">${esc(r.poNumber)} / ${esc(r.poItem)}</div>
+          </div>
+        </div>
+        <div class="small text-muted">Material: ${esc(r.material)} &nbsp;|&nbsp; Plant: ${esc(r.plant)}</div>
+      </div>`;
+  });
+
+  // Summary table rows
+  state.grResults.forEach(r => {
+    tbody.innerHTML += `
+      <tr class="${r.success ? 'table-success' : 'table-danger'}">
+        <td>${esc(r.poNumber)}</td>
+        <td>${esc(r.poItem)}</td>
+        <td>${esc(r.material)}</td>
+        <td>${esc(r.plant)}</td>
+        <td class="fw-bold">${r.success ? esc(r.grDocumentNo) : '—'}</td>
+        <td>${r.success ? esc(r.grDocumentYear) : '—'}</td>
+        <td>${r.success
+          ? '<span class="chip chip-green"><i class="bi bi-check-lg"></i> Posted</span>'
+          : '<span class="chip chip-red"><i class="bi bi-x-lg"></i> Failed</span>'}</td>
+        <td class="text-muted small">${esc(r.message)}</td>
+      </tr>`;
+  });
+}
+
+function startOver() {
+  Object.assign(state, {
+    step: 1, deliveryNoteId: null, fileName: null,
+    extractedItems: [], matchedItems: [], selectedIds: [], grResults: [],
+  });
+  resetUpload();
+  document.getElementById('extracted-tbody').innerHTML = '';
+  document.getElementById('match-tbody').innerHTML = '';
+  document.getElementById('gr-results-container').innerHTML = '';
+  document.getElementById('gr-summary-tbody').innerHTML = '';
+  goStep(1);
+}
+</script>
+</body>
+</html>

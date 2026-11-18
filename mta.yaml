@@ -15,11 +15,33 @@ build-parameters:
       commands:
         - npm ci
         - npx cds build --production
-        - node -e "require('fs').cpSync('app/webapp','gen/srv/app/webapp',{recursive:true})"
 
 modules:
 
-  # ---- CAP Node.js backend (also serves the UI via express.static) ----------
+  # ---- Approuter (serves UI from localDir, proxies API to srv) ----------------
+  - name: my-btp-app-approuter
+    type: nodejs
+    path: approuter
+    parameters:
+      buildpack: nodejs_buildpack
+      memory: 256M
+      routes:
+        - route: my-btp-app-approuter.${default-domain}
+      keep-existing-routes: true
+    build-parameters:
+      builder: npm
+      ignore:
+        - node_modules/
+    requires:
+      - name: my-btp-app-xsuaa
+      - name: srv-api
+        group: destinations
+        properties:
+          name: srv-api
+          url: ~{srv-url}
+          forwardAuthToken: true
+
+  # ---- CAP Node.js backend -------------------------------------------------------
   - name: my-btp-app-srv
     type: nodejs
     path: gen/srv
